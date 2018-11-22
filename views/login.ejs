@@ -1,0 +1,108 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Login</title>
+  <link href="https://cdn.bootcss.com/twitter-bootstrap/4.1.0/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .trans {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+<div id="app" class="container">
+  <div class="row">
+    <div class="col-md-8">
+      <form action="/user/login" method="POST" role="form">
+        <legend>Login <a href="/user/register">Register</a></legend>
+        <div class="form-group">
+          <label for="">User name</label>
+          <input type="text" class="form-control" name="uname" v-model="uname">
+          <label for="">Email</label>
+          <input type="text" class="form-control" name="email" v-model="email">
+          <label for="">Password</label>
+          <input type="password" class="form-control" name="pwd" v-model="pwd">
+        </div>
+        <button type="submit" class="btn btn-primary">login with form</button>
+      </form>
+      <button class="btn btn-primary" @click="submit">login with vue and axios</button>
+      <button class="btn btn-primary" @click="getInfo" v-if="token">getInfo</button>
+      <p class="trans"><b>your token:</b> {{ token }}</p>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.bootcss.com/vue/2.5.17/vue.min.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+  // axios
+  axios.interceptors.request.use(
+    config => {
+      const token = localStorage.getItem('TOKEN');
+      if (token) {
+        // Bearer是JWT的认证头部信息
+        config.headers.common['Authorization'] = 'Bearer ' + token;
+      }
+      return config;
+    },
+    error => {
+      return Promise.reject(error);
+    }
+  );
+  // /src/main.js
+  axios.interceptors.response.use(
+    response => {
+      return response;
+    },
+    error => {
+      if (error.response.status === 401) {
+        window.alert('401')
+      } else {
+        window.alert('系统出现错误')
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  // vue
+  var app = new Vue({
+    el: '#app',
+    created() {
+      const token = localStorage.getItem('TOKEN');
+      this.token = token
+    },
+    data: {
+      message: 'Hello Vue!',
+      uname: '',
+      email: '',
+      pwd: '',
+      token: ''
+    },
+    methods: {
+      submit () {
+        const data = {
+          uname: this.uname,
+          pwd: this.pwd,
+          email: this.email
+        }
+        axios.post('/user/login', data).then(({ data }) => {
+          console.log(data)
+          if (data.type === 'success') {
+            this.token = data.token
+            localStorage.setItem('TOKEN', data.token);
+          }
+        })
+      },
+      getInfo () {
+        axios.get('/user/info').then(({ data })=> {
+          console.log(data)
+        })
+      }
+    }
+  })
+</script>
+</body>
+</html>

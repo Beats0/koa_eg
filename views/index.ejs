@@ -1,0 +1,30 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Index</title>
+</head>
+<body>
+<div id="app" class="container">
+  <div class="row">
+    <div class="col-md-8">
+      <form action="/user/login" method="POST" role="form">
+        <legend>Login</legend>
+        <div class="form-group">
+          <label for="">User name</label>
+          <input type="text" class="form-control" name="uname" v-model="uname">
+          <label for="">Password</label>
+          <input type="password" class="form-control" name="pwd" v-model="pwd">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit with form</button>
+      </form>
+      <button class="btn btn-primary"></button>
+      <button class="btn btn-primary">getInfo</button>
+      <p class="trans"><b>your token:</b> {{ token }}</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
