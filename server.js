@@ -23,7 +23,7 @@ app.use(tokenCheck())
 // Custom 401 handling if you don't want to expose koa-jwt errors to users
 app.use(function (ctx, next) {
   return next().catch((err) => {
-    if (401 == err.status) {
+    if (401 === err.status) {
       ctx.status = 401;
       ctx.body = 'Protected resource, use Authorization header to get access\n';
     } else {
