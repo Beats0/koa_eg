@@ -6,7 +6,6 @@ const router = new Router({
 })
 
 router
-  .get('/', user.userHome)
   .get('/info', user.userInfo)
   .get('/login', user.login)
   .post('/login', user.postLogin)

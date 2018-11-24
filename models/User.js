@@ -3,12 +3,6 @@ const mongoosePaginate = require('mongoose-paginate')
 const filter = require('../utils/filter')
 
 const userSchema = mongoose.Schema({
-  uid: {
-    type: String,
-    index: {
-      unique: true
-    }
-  },
   uname: {
     type: String,
     required: true
@@ -35,14 +29,6 @@ const userSchema = mongoose.Schema({
     type: Number,
     default: Date.now()
   },
-  timerecord: {
-    type: [Number],
-    default: [0, 0, 0, 0, 0]
-  },
-  iprecord: {
-    type: [String],
-    default: ['', '', '', '', '']
-  },
   status: {
     type: Number,
     default: 1
@@ -53,11 +39,17 @@ const userSchema = mongoose.Schema({
 
 userSchema.plugin(mongoosePaginate)
 
-userSchema.pre('validate', function (next) {
+userSchema.pre('validate', function(next) {
+  console.log(this)
+  console.log(!filter.min(this.uname, 1))
   if (!filter.min(this.uname, 1)) {
     next(new Error('昵称长度至少为1'))
   } else if (!filter.max(this.uname, 20)) {
     next(new Error('昵称长度最长为20'))
+  } else if (filter.hasBlank(this.uname)) {
+    next(new Error('昵称不合法'))
+  } else if (!filter.isEmail(this.email)) {
+    next(new Error('邮箱格式错误'))
   } else {
     next()
   }

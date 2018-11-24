@@ -2,39 +2,39 @@ const User = require('../models/User')
 const { jwtSign } = require('../utils/helper')
 const filter = require('../utils/filter')
 const { hash } = require('../libs/hash')
+const mongoose = require('mongoose')
 
-const someData = async (ctx) => {
-  ctx.body = {
-    data: 'some data'
-  }
-}
-
-// home
-const userHome = async (ctx) => {
-  const {uid, uname} = ctx.state
-  ctx.body = {
-    uid,
-    uname
-  }
-}
 
 // get userInfo
 const userInfo = async (ctx) => {
-  const {uid, uname} = ctx.state
+  const { uid } = ctx.state
+  if (!uid) {
+    return ctx.body = {
+      type: 'error',
+      msg: '未登录'
+    }
+  }
+  const session = (await sessionByUid(uid))[0]
   ctx.body = {
-    uid,
-    uname
+    session
   }
 }
 
-// get
+// render login.ejs
 const login = async (ctx) => {
   await ctx.render('login')
 }
 
-// post
+// login
 const postLogin = async (ctx) => {
   const req = ctx.request.body
+  console.log(req)
+  if(!req.email) {
+    return ctx.body = {
+      type: 'error',
+      msg: '邮箱不能为空'
+    }
+  }
   const { pwd } = (await getPwdByEmail(req.email))[0]
   if (hash(req.pwd) === pwd) {
     const session = (await sessionByEmail(req.email))[0]
@@ -42,7 +42,7 @@ const postLogin = async (ctx) => {
       type: 'success',
       msg: '登陆成功',
       session,
-      token: jwtSign(session.uid, session.uname)
+      token: jwtSign(session._id, session.uname)
     }
   } else {
     ctx.body = {
@@ -52,23 +52,32 @@ const postLogin = async (ctx) => {
   }
 }
 
-// get
+// render register ejg
 const register = async (ctx) => {
   await ctx.render('register')
 }
 
+// register
 const postRegister = async (ctx) => {
   const req = ctx.request.body
+  const hasUname = await User.findOne({uname: req.uname}).exec()
+  if (hasUname) {
+    return ctx.body = {
+      type: 'error',
+      msg: '该昵称已被注册'
+    }
+  }
+  const hasEmail = await User.findOne({"email": {$regex: `${req.email}`, $options: "$i"}}).exec()
+  if (hasEmail) {
+    return ctx.body = {
+      type: 'error',
+      msg: '该邮箱已被注册'
+    }
+  }
   if (filter.isEmpty(req.pwd)) {
     return ctx.body = {
       type: 'error',
       msg: '密码为空'
-    }
-  }
-  if (!filter.isEmail(req.email)) {
-    return ctx.body = {
-      type: 'error',
-      msg: '邮箱格式错误'
     }
   }
   if (!filter.max(req.pwd, 20) || !filter.min(req.pwd, 8)) {
@@ -82,38 +91,43 @@ const postRegister = async (ctx) => {
     email: req.email,
     pwd: hash(req.pwd)
   })
-  const total = await User.findOne({email: user.email}).exec()
-  if (total) {
-    return ctx.body = {
-      type: 'error',
-      msg: '邮箱已被注册'
-    }
-  }
   try {
     await user.save()
+    ctx.body = {
+      type: 'success',
+      msg: '注册成功',
+      session: (await sessionByEmail(user.email))[0],
+      token: jwtSign(user._id, user.uname)
+    }
   } catch (err) {
-    console.log(err)
-    ctx.throw(400, err.message)
-  }
-  ctx.body = {
-    type: 'success',
-    msg: '注册成功',
-    session: (await sessionByEmail(user.email)),
-    token: jwtSign(user.uid, user.uname)
+    ctx.body = {
+      type: 'error',
+      msg: err.message
+    }
   }
 }
 
-// find
-const sessionByEmail = async (email) => {
-  const filter = {email}
+// get session by uid
+const sessionByUid = async (uid) => {
+  const filter = { "_id": mongoose.Types.ObjectId(uid) }
   return session = await User
     .find(filter)
-    .select('uid uname avatar')
+    .select('_id uname avatar')
     .exec()
 }
 
+// get session by email
+const sessionByEmail = async (email) => {
+  const filter = { email }
+  return session = await User
+    .find(filter)
+    .select('_id uname avatar')
+    .exec()
+}
+
+// get password by email
 const getPwdByEmail = async (email) => {
-  const filter = {email}
+  const filter = { email }
   return pwd = await User
     .find(filter)
     .select('pwd')
@@ -121,8 +135,6 @@ const getPwdByEmail = async (email) => {
 }
 
 module.exports = {
-  someData,
-  userHome,
   userInfo,
   login,
   postLogin,

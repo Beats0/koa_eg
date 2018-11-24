@@ -6,7 +6,7 @@ const router = new Router({
 })
 
 router
-  .get('/', user.someData)
+  .get('/info', user.userInfo)
   .post('/login', user.postLogin)
   .post('/register', user.postRegister)
 

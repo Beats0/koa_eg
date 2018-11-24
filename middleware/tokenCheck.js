@@ -15,9 +15,8 @@ module.exports = function () {
         try {
           // 解密payload，获取用户名和ID
           let payload = await verify(token.split(' ')[1], jwtConfig.secret);
-          console.log(payload)
+          console.log('payload', payload)
           ctx.state = {
-            uname: payload.uname,
             uid: payload.uid
           };
         } catch (err) {
@@ -25,7 +24,7 @@ module.exports = function () {
           ctx.status = 401;
           ctx.body = {
             type: 'error',
-            message: 'token以过期'
+            msg: 'token已过期'
           };
         }
       }
@@ -35,13 +34,7 @@ module.exports = function () {
         ctx.status = 401;
         ctx.body = {
           type: 'error',
-          message: '认证失败'
-        };
-      } else {
-        err.status = 404;
-        ctx.body = {
-          type: 'error',
-          message: '404'
+          msg: '认证失败'
         };
       }
     }

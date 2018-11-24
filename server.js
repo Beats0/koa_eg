@@ -4,10 +4,14 @@ const koaJwt = require('koa-jwt')
 const router = require('./routes')
 const api = require('./api')
 const tokenCheck = require('./middleware/tokenCheck')
+const logger = require('./middleware/logger')
 const { jwtConfig }  = require('./config')
 
 
 const app = new koa()
+
+// logger
+app.use(logger())
 
 // koa body
 app.use(koaBody({
@@ -16,10 +20,11 @@ app.use(koaBody({
 
 // ejs
 const views = require('koa-views');
-app.use(views('views', {extension: 'ejs'}));
+app.use(views('views', { extension: 'ejs' }));
 
 // jwt middleware
 app.use(tokenCheck())
+
 // Custom 401 handling if you don't want to expose koa-jwt errors to users
 app.use(function (ctx, next) {
   return next().catch((err) => {
@@ -33,12 +38,12 @@ app.use(function (ctx, next) {
 });
 
 app.use(koaJwt({secret: jwtConfig.secret}).unless({
+  //数组中的路径不需要通过jwt验证
   path: [
     /^\/api\/user\/login/,
     /^\/api\/user\/register/,
     /^((?!\/api).)*$/,
-    // api部分, 设置除了私有接口外的其它资源，可以不需要认证访问,
-    /^\/user\/login/,
+    /^\/user\/login/
   ]
 }))
 
