@@ -1,5 +1,5 @@
 const User = require('../models/User')
-const { jwtSign } = require('../utils/helper')
+const { jwtSign, ms } = require('../utils/helper')
 const filter = require('../utils/filter')
 const { hash } = require('../libs/hash')
 const mongoose = require('mongoose')
@@ -42,7 +42,8 @@ const postLogin = async (ctx) => {
       type: 'success',
       msg: '登陆成功',
       session,
-      token: jwtSign(session._id, session.uname)
+      token: jwtSign(session._id, session.uname),
+      expired: Date.now() + ms(14, 'd')
     }
   } else {
     ctx.body = {
@@ -97,7 +98,8 @@ const postRegister = async (ctx) => {
       type: 'success',
       msg: '注册成功',
       session: (await sessionByEmail(user.email))[0],
-      token: jwtSign(user._id, user.uname)
+      token: jwtSign(user._id, user.uname),
+      expired: Date.now() + ms(14, 'd')
     }
   } catch (err) {
     ctx.body = {

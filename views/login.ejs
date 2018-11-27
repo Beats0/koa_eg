@@ -7,6 +7,7 @@
   <title>Login</title>
   <link href="https://cdn.bootcss.com/twitter-bootstrap/4.1.0/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    [v-cloak] { display:none; }
     .trans {
       white-space: pre-wrap;
       word-break: break-word;
@@ -14,7 +15,7 @@
   </style>
 </head>
 <body>
-<div id="app" class="container">
+<div id="app" class="container" v-cloak>
   <div class="row">
     <div class="col-md-8">
       <form action="/user/login" method="POST" role="form">
@@ -30,19 +31,27 @@
         <button type="submit" class="btn btn-primary">login with form</button>
       </form>
       <button class="btn btn-primary" @click="submit">login with vue and axios</button>
-      <button class="btn btn-primary" @click="getInfo" v-if="token">getInfo</button>
-      <p class="trans"><b>your token:</b> {{ token }}</p>
+      <button class="btn btn-primary" @click="getInfo" v-if="isLogin">getInfo</button>
+      <div v-if="isLogin">
+        <img :src="session.avatar" :alt="uname">
+        <h5>uname: {{ session.uname }}</h5>
+        <h5>id: {{ session._id }}</h5>
+      </div>
+      <p class="trans"  v-if="isLogin"><b>your token:</b> {{ token }}</p>
     </div>
   </div>
 </div>
-<script src="https://cdn.bootcss.com/vue/2.5.17/vue.min.js"></script>
+<script src="https://vuejs.org/js/vue.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script>
   // axios
   axios.interceptors.request.use(
     config => {
       const token = localStorage.getItem('TOKEN');
-      if (token) {
+      const expired = Number(localStorage.getItem('EXPIRED'))
+      console.log('expired', expired)
+      // 时间戳过期检验
+      if (token && expired > Date.now()) {
         // Bearer是JWT的认证头部信息
         config.headers.common['Authorization'] = 'Bearer ' + token;
       }
@@ -52,14 +61,20 @@
       return Promise.reject(error);
     }
   );
-  // /src/main.js
+  // 全剧过滤
   axios.interceptors.response.use(
     response => {
+      if (response.data.type !== 'success' && response.data.msg) {
+        window.alert(response.data.msg)
+      }
       return response;
     },
     error => {
       if (error.response.status === 401) {
-        window.alert('401')
+        // 清除token
+        localStorage.removeItem('TOKEN');
+        localStorage.removeItem('EXPIRED')
+        window.alert('401 token已过期')
       } else {
         window.alert('系统出现错误')
       }
@@ -72,6 +87,11 @@
     el: '#app',
     created() {
       const token = localStorage.getItem('TOKEN');
+      const expired = Number(localStorage.getItem('EXPIRED'))
+      if (token && expired > Date.now()) {
+        this.isLogin = true
+        this.getInfo()
+      }
       this.token = token
     },
     data: {
@@ -79,7 +99,9 @@
       uname: '',
       email: '',
       pwd: '',
-      token: ''
+      token: '',
+      isLogin: false,
+      session: {}
     },
     methods: {
       submit () {
@@ -89,16 +111,17 @@
           email: this.email
         }
         axios.post('/user/login', data).then(({ data }) => {
-          console.log(data)
+          // session
           if (data.type === 'success') {
             this.token = data.token
             localStorage.setItem('TOKEN', data.token);
+            localStorage.setItem('EXPIRED', data.expired);
           }
         })
       },
       getInfo () {
         axios.get('/user/info').then(({ data })=> {
-          console.log(data)
+          this.session = data.session
         })
       }
     }
